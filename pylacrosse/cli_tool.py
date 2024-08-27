@@ -20,32 +20,28 @@ import codecs
 import logging
 import os
 import time
-try:
-    from ConfigParser import (SafeConfigParser, NoOptionError)
-except ImportError:
-    from configparser import (SafeConfigParser, NoOptionError)
+from configparser import ConfigParser, NoOptionError
 
 import pylacrosse
 
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DEVICE = '/dev/ttyUSB0'
+
 def get_known_sensor_name(sensor_id, config):
+    if config is None:
+        return 'unknown'
     try:
         if str(sensor_id) in config.sections():
             name = config.get(str(sensor_id), 'name')
             return name
-    except NoOptionError as e:
-        return 'unknown'
-    except AttributeError:
+    except NoOptionError:
         return 'unknown'
     return 'unknown'
 
-
 def scan_callback(sensor, config):
     name = get_known_sensor_name(sensor.sensorid, config)
-    print('%s name=%s' % (sensor, name))
-
+    print(f'{sensor} name={name}')
 
 def configure(lacrosse, config, args):
     if args.frequency_rfm1:
@@ -56,7 +52,7 @@ def configure(lacrosse, config, args):
     if args.datarate_rfm1:
         lacrosse.set_datarate(args.datarate_rfm1, 1)
     if args.datarate_rfm2:
-        lacrosse.set_datarate(args.datarate_rfm1, 2)
+        lacrosse.set_datarate(args.datarate_rfm2, 2)
 
     if args.toggle_mask_rfm1:
         lacrosse.set_toggle_mask(args.toggle_mask_rfm1, 1)
@@ -66,8 +62,7 @@ def configure(lacrosse, config, args):
     if args.toggle_interval_rfm1:
         lacrosse.set_toggle_interval(args.toggle_interval_rfm1, 1)
     if args.toggle_interval_rfm2:
-        lacrosse.set_toggle_interval(args.toggle_interval_rfm1, 2)
-
+        lacrosse.set_toggle_interval(args.toggle_interval_rfm2, 2)
 
 def scan(lacrosse, config, args):
     lacrosse.register_all(scan_callback, user_data=config)
@@ -77,14 +72,14 @@ def scan(lacrosse, config, args):
 
 def get_info(lacrosse, config, args):
     info = lacrosse.get_info()
-    print('name:     {}'.format(info['name']))
-    print('version:  {}'.format(info['version']))
+    print(f'name:     {info["name"]}')
+    print(f'version:  {info["version"]}')
     if 'rfm1name' in info:
-        print('rfm1name: {}'.format(info['rfm1name']))
-        print('rfm1frequency: {}'.format(info['rfm1frequency']))
-        print('rfm1datarate: {}'.format(info['rfm1datarate']))
-        print('rfm1toggleinterval: {}'.format(info['rfm1toggleinterval']))
-        print('rfm1togglemask: {}'.format(info['rfm1togglemask']))
+        print(f'rfm1name: {info["rfm1name"]}')
+        print(f'rfm1frequency: {info["rfm1frequency"]}')
+        print(f'rfm1datarate: {info["rfm1datarate"]}')
+        print(f'rfm1toggleinterval: {info["rfm1toggleinterval"]}')
+        print(f'rfm1togglemask: {info["rfm1togglemask"]}')
 
 def led(lacrosse, config, args):
     state = args.led_state.lower() == 'on'
@@ -93,44 +88,44 @@ def led(lacrosse, config, args):
 def main(args=None):
     parser = argparse.ArgumentParser('LaCrosse sensor CLI tool.', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-v', action='store_true', dest='verbose',
-            help='be more verbose')
+                        help='be more verbose')
     parser.add_argument('-d', '--device', type=str, dest='device',
-            help='set local device e.g. \'{0}\' or\n'
-                 'set remote device e.g. \'rfc2217://[IP]:[PORT]\'\n'
-                 'default: \'{0}\''.format(DEFAULT_DEVICE),
-            default=DEFAULT_DEVICE)
+                        help='set local device e.g. \'{0}\' or\n'
+                             'set remote device e.g. \'rfc2217://[IP]:[PORT]\'\n'
+                             'default: \'{0}\''.format(DEFAULT_DEVICE),
+                        default=DEFAULT_DEVICE)
     parser.add_argument('-f', type=str, dest='frequency_rfm1',
-            help='set the frequency for RFM1')
+                        help='set the frequency for RFM1')
     parser.add_argument('-F', type=str, dest='frequency_rfm2',
-            help='set the frequency for RFM2')
+                        help='set the frequency for RFM2')
     parser.add_argument('-t', type=str, dest='toggle_interval_rfm1',
-            help='set the toggle interval for RFM1')
+                        help='set the toggle interval for RFM1')
     parser.add_argument('-T', type=str, dest='toggle_interval_rfm2',
-            help='set the toggle interval for RFM2')
+                        help='set the toggle interval for RFM2')
     parser.add_argument('-m', type=str, dest='toggle_mask_rfm1',
-            help='set the toggle mask for RFM1')
+                        help='set the toggle mask for RFM1')
     parser.add_argument('-M', type=str, dest='toggle_mask_rfm2',
-            help='set the toggle mask for RFM2')
+                        help='set the toggle mask for RFM2')
     parser.add_argument('-r', type=str, dest='datarate_rfm1',
-            help='set the datarate for RFM1')
+                        help='set the datarate for RFM1')
     parser.add_argument('-R', type=str, dest='datarate_rfm2',
-            help='set the datarate for RFM2')
+                        help='set the datarate for RFM2')
 
     _sub = parser.add_subparsers(title='Commands')
 
     # list all devices
     subparser = _sub.add_parser('scan',
-            help='Show all received sensors')
+                                help='Show all received sensors')
     subparser.set_defaults(func=scan)
 
     subparser = _sub.add_parser('info',
-            help='Get configuration info')
+                                help='Get configuration info')
     subparser.set_defaults(func=get_info)
 
     subparser = _sub.add_parser('led',
-            help='Set traffic LED state')
+                                help='Set traffic LED state')
     subparser.add_argument('led_state', type=str, choices=['on', 'off'],
-            metavar="STATE", help='LED state')
+                           metavar="STATE", help='LED state')
     subparser.set_defaults(func=led)
 
     args = parser.parse_args(args)
@@ -140,9 +135,8 @@ def main(args=None):
         _LOGGER.setLevel(logging.DEBUG)
 
     try:
-        config = SafeConfigParser()
-        config.readfp(codecs.open(os.path.expanduser(
-                '~/.lacrosse/known_sensors.ini'), 'r', 'UTF-8'))
+        config = ConfigParser()
+        config.read_file(codecs.open(os.path.expanduser('~/.lacrosse/known_sensors.ini'), 'r', 'UTF-8'))
     except IOError:
         config = None
 
