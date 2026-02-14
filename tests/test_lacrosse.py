@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import time
-
-from nose.tools import eq_, raises
-from mock import MagicMock
+import unittest
+from unittest.mock import MagicMock
 
 from pylacrosse import (LaCrosse, LaCrosseSensor)
 
@@ -14,7 +13,7 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-class TestLacrosse(object):
+class TestLacrosse(unittest.TestCase):
 
     def test_refresh(self):
         mock_readline = MagicMock()
@@ -49,25 +48,25 @@ class TestLacrosse(object):
         time.sleep(0.01)
         l._stop_worker()
 
-        eq_(mock_cb_1.call_count, 1)
-        eq_(mock_cb_2.call_count, 2)
+        assert mock_cb_1.call_count == 1
+        assert mock_cb_2.call_count == 2
 
     def test_get_info(self):
         info = LaCrosse._parse_info('[LaCrosseITPlusReader.10.1s (RFM12B f:0 r:17241)]')
-        eq_(info['name'], 'LaCrosseITPlusReader')
-        eq_(info['version'], '10.1s')
+        assert info['name'] == 'LaCrosseITPlusReader'
+        assert info['version'] == '10.1s'
 
         info = LaCrosse._parse_info('[LaCrosseITPlusReader.10.1s (RFM12B f:0 r:17241)]')
-        eq_(info['rfm1name'], 'RFM12B')
-        eq_(info['rfm1frequency'], '0')
-        eq_(info['rfm1datarate'], '17241')
+        assert info['rfm1name'] == 'RFM12B'
+        assert info['rfm1frequency'] == '0'
+        assert info['rfm1datarate'] == '17241'
 
         info = LaCrosse._parse_info('[LaCrosseITPlusReader.10.1s (RFM12B f:0 t:10~3)]')
-        eq_(info['rfm1name'], 'RFM12B')
-        eq_(info['rfm1frequency'], '0')
-        eq_(info['rfm1datarate'], None)
-        eq_(info['rfm1toggleinterval'], '10')
-        eq_(info['rfm1togglemask'], '3')
+        assert info['rfm1name'] == 'RFM12B'
+        assert info['rfm1frequency'] == '0'
+        assert info['rfm1datarate'] is None
+        assert info['rfm1toggleinterval'] == '10'
+        assert info['rfm1togglemask'] == '3'
 
     def test_led_mode_state(self):
         mock = MagicMock()
@@ -99,15 +98,14 @@ class TestLacrosse(object):
         l.set_frequency(400, rfm=2)
         l._serial.write.assert_called_with(b'400F')
 
-    @raises(KeyError)
     def test_set_frequency_invalid_rfm(self):
         mock = MagicMock()
 
         l = LaCrosse('/dev/ttyTEST', 115200)
         l._serial.write = mock
 
-        l.set_frequency(500, rfm=3)
-        l._serial.write.assert_called_with(b'400f')
+        with self.assertRaises(KeyError):
+            l.set_frequency(500, rfm=3)
 
     def test_set_datarate(self):
         mock = MagicMock()
@@ -157,13 +155,13 @@ class TestLacrosse(object):
         l.set_toggle_mask(3, rfm=2)
         l._serial.write.assert_called_with(b'3M')
 
-class TestLaCrosseSensor(object):
+class TestLaCrosseSensor(unittest.TestCase):
 
     def test_init(self):
         s = LaCrosseSensor('OK 9 1 1 4 150 66')
-        eq_(s.sensorid, 1)
-        eq_(s.sensortype, 1)
-        eq_(s.temperature, 17.4)
-        eq_(s.humidity, 66)
-        eq_(s.new_battery, False)
-        eq_(s.low_battery, False)
+        assert s.sensorid == 1
+        assert s.sensortype == 1
+        assert s.temperature == 17.4
+        assert s.humidity == 66
+        assert s.new_battery is False
+        assert s.low_battery is False

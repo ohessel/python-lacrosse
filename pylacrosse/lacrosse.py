@@ -15,7 +15,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 
-from __future__ import unicode_literals
 import logging
 import re
 import threading
@@ -63,8 +62,8 @@ class LaCrosse(object):
         self._serial.baudrate = self._baud
         self._serial.timeout = self._timeout
         self._serial.open()
-        self._serial.flushInput()
-        self._serial.flushOutput()
+        self._serial.reset_input_buffer()
+        self._serial.reset_output_buffer()
 
     def close(self):
         """Close the device."""
